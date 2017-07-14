@@ -46,6 +46,7 @@ public abstract class AbstractMsgBusProducer implements MsgBusProducer, Runnable
 
   @Override
   public void run() {
+    Logger.debug("Producer ready to produce.");
     do {
       try {
         this.sendMessage(muxQueue.take());

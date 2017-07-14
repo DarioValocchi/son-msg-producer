@@ -63,7 +63,7 @@ public class RabbitMqConsumer extends AbstractMsgBusConsumer implements MsgBusCo
     try {
       ConnectionFactory cf = new ConnectionFactory();
       
-      Logger.info("Connecting to: " + request.getString("url"));
+      Logger.info("Connecting consumer to: " + request.getString("url"));
       cf.setUri(request.getString("url"));
       connection = cf.newConnection();
       channel = connection.createChannel();

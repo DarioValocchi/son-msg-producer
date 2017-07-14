@@ -64,7 +64,7 @@ public class RabbitMqProducer extends AbstractMsgBusProducer {
     
     try {
       String uri= request.getString("url");
-      Logger.info("Connectiong to bus at: "+uri);
+      Logger.info("Connecting producer to: " + request.getString("url"));
       cf.setUri(uri);
     } catch (KeyManagementException e) {
       Logger.error(e.getMessage(), e);

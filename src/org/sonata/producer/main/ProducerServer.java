@@ -3,10 +3,13 @@ package org.sonata.producer.main;
 import java.io.File;
 import java.util.HashMap;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+import org.slf4j.LoggerFactory;
 import org.sonata.producer.rabbit.RabbitMqConsumer;
 import org.sonata.producer.rabbit.RabbitMqProducer;
 import org.sonata.producer.rabbit.ServicePlatformMessage;
@@ -15,45 +18,54 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class ProducerServer implements Runnable {
 
+  private static final org.slf4j.Logger Logger = LoggerFactory.getLogger(ProducerServer.class);
+
   private ExecutorService myThreadPool;
   private Namespace request;
-  private HashMap<String, Generator> threadMap;
+  private ConcurrentHashMap<String, Generator> threadMap;
   private RabbitMqProducer producer;
   private RabbitMqConsumer consumer;
   private boolean stop = false;
   private BlockingQueue<ServicePlatformMessage> muxQueue;
   private BlockingQueue<ServicePlatformMessage> myQueue;
-  private static int requestSent=0;
-  private static int requestFailed=0;
-  
-  public ProducerServer(Namespace request){
-    this.request=request;
-    this.myThreadPool = Executors.newFixedThreadPool(request.getInt("threads"));
-    this.threadMap = new HashMap<String,Generator>();
-    muxQueue = new LinkedBlockingQueue<ServicePlatformMessage>(request.getInt("threads")+1);
-    this.myQueue= new LinkedBlockingQueue<ServicePlatformMessage>(request.getInt("threads")+1);
+  private static int requestSent = 0;
+  private static int requestFailed = 0;
+
+  public ProducerServer(Namespace request) {
+    this.request = request;
+    this.myThreadPool = Executors.newCachedThreadPool();
+    this.threadMap = new ConcurrentHashMap<String, Generator>();
+    muxQueue = new LinkedBlockingQueue<ServicePlatformMessage>(request.getInt("threads") + 1);
+    this.myQueue = new LinkedBlockingQueue<ServicePlatformMessage>(request.getInt("threads") + 1);
     this.producer = new RabbitMqProducer(muxQueue, request);
     this.consumer = new RabbitMqConsumer(myQueue, request);
   }
 
   public void start() {
-    System.out.println("Starting server with parameters:");
-    System.out.println(request);
+    Logger.debug("Starting server with parameters:");
+    Logger.debug(request.toString());
     producer.connectToBus();
     consumer.connectToBus();
     producer.startProducing();
     consumer.startConsuming();
     new Thread(this).start();
-    
+
     for (int i = 0; i < request.getInt("threads"); i++) {
-      Generator gen =
-          new Generator(request.getInt("requests"), (File) request.get("folder"), threadMap, muxQueue);
+      Generator gen = new Generator(request.getInt("requests"), (File) request.get("folder"),
+          threadMap, muxQueue, i+1);
       myThreadPool.execute(gen);
     }
     myThreadPool.shutdown();
-    
-    //TODO write stats;
-    System.out.println("Test Finished.\nRequest sent= "+ProducerServer.requestSent+"\nRequestFailed="+ProducerServer.requestFailed);
+    try {
+      myThreadPool.awaitTermination(20, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    // TODO write stats;
+    Logger.info("Test Finished.");
+    Logger.info("Request sent = " + ProducerServer.requestSent);
+    Logger.info("RequestFailed = " + ProducerServer.requestFailed);
     stop();
     producer.stopProducing();
     consumer.stopConsuming();
@@ -70,7 +82,7 @@ public class ProducerServer implements Runnable {
 
         Generator th = threadMap.get(sid);
         th.update(null, message);
-        
+
       } catch (InterruptedException e) {
         System.out.println(e.getMessage());
       }
@@ -81,10 +93,11 @@ public class ProducerServer implements Runnable {
     this.stop = true;
   }
 
-  public static synchronized void incRequestsFailed(){
+  public static synchronized void incRequestsFailed() {
     requestFailed++;
   }
-  public static synchronized void incRequestsSent(){
+
+  public static synchronized void incRequestsSent() {
     requestSent++;
   }
 }

@@ -60,17 +60,17 @@ public class AdaptorDefaultConsumer extends DefaultConsumer {
       byte[] body) throws IOException {
     String message = new String(body, "UTF-8");
     // Logger.info("Received message:" + message + " on " + envelope.getRoutingKey());
-    Logger.info("Received message on " + envelope.getRoutingKey());
+    //Logger.debug("Received message on " + envelope.getRoutingKey());
     if (properties != null && properties.getAppId() != null
         && properties.getAppId().equals("sonata.kernel.WimAdapter")
         && envelope.getRoutingKey().equals("infrastructure.service.deploy")) {
-      Logger.info("Ignoring WIM adaptor response after service deployment");
+      //Logger.debug("Ignoring WIM adaptor response after service deployment");
     } else if (properties != null && properties.getAppId() != null
         && !properties.getAppId().equals("org.sonata.TestProducer")) {
       this.msgBusConsumer.processMessage(message, properties.getContentType(),
           envelope.getRoutingKey(), properties.getCorrelationId(), properties.getReplyTo());
     } else {
-      Logger.info("Message ignored: " + properties);
+      //Logger.debug("Message ignored: " + properties);
     }
   }
 
