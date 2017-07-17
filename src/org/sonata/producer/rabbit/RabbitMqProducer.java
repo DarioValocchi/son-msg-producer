@@ -28,59 +28,24 @@ package org.sonata.producer.rabbit;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
 import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-
-import net.sourceforge.argparse4j.inf.Namespace;
 
 import org.slf4j.LoggerFactory;
 
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeoutException;
 
 public class RabbitMqProducer extends AbstractMsgBusProducer {
 
-  
-  
+
   private static final org.slf4j.Logger Logger = LoggerFactory.getLogger(RabbitMqProducer.class);
-  private Namespace request;
-  private Connection connection;
 
-  public RabbitMqProducer(BlockingQueue<ServicePlatformMessage> muxQueue, Namespace request) {
+
+  public RabbitMqProducer(BlockingQueue<ServicePlatformMessage> muxQueue) {
     super(muxQueue);
-    this.request=request;
-
   }
 
   @Override
   public void connectToBus() {
-    
-    ConnectionFactory cf = new ConnectionFactory();
-    
-    try {
-      String uri= request.getString("url");
-      Logger.info("Connecting producer to: " + request.getString("url"));
-      cf.setUri(uri);
-    } catch (KeyManagementException e) {
-      Logger.error(e.getMessage(), e);
-    } catch (NoSuchAlgorithmException e) {
-      Logger.error(e.getMessage(), e);
-    } catch (URISyntaxException e) {
-      Logger.error(e.getMessage(), e);
-    }
-
-    try {
-      connection = cf.newConnection();
-    } catch (IOException e) {
-      Logger.error(e.getMessage(), e);
-    } catch (TimeoutException e) {
-      Logger.error(e.getMessage(), e);
-    }
+    //Do nothing
   }
 
   @Override
@@ -90,11 +55,10 @@ public class RabbitMqProducer extends AbstractMsgBusProducer {
     // TODO maps the specific Adaptor message to the proper SP topic
 
     try {
-      Channel channel = connection.createChannel();
-      String exchangeName = request.getString("exchange");
-      channel.exchangeDeclare(exchangeName, "topic");
+      Channel channel = RabbitMqHelperSingleton.getInstance().getChannel();  
+      String exchangeName = RabbitMqHelperSingleton.getInstance().getExchangeName();
       BasicProperties properties = new BasicProperties().builder().appId("org.sonata.TestProducer")
-          .contentType(message.getContentType()).replyTo(message.getReplyTo())
+          .contentType(message.getContentType()).replyTo(message.getReplyTo()).deliveryMode(2)
           .correlationId(message.getSid()).build();
       channel.basicPublish(exchangeName, message.getTopic(), properties,
           message.getBody().getBytes("UTF-8"));
@@ -105,5 +69,7 @@ public class RabbitMqProducer extends AbstractMsgBusProducer {
     }
     return out;
   }
+
+ 
 
 }

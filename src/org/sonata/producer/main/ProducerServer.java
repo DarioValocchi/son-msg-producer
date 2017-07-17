@@ -2,6 +2,7 @@ package org.sonata.producer.main;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -11,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 import org.sonata.producer.rabbit.RabbitMqConsumer;
+import org.sonata.producer.rabbit.RabbitMqHelperSingleton;
 import org.sonata.producer.rabbit.RabbitMqProducer;
 import org.sonata.producer.rabbit.ServicePlatformMessage;
 
@@ -37,22 +39,37 @@ public class ProducerServer implements Runnable {
     this.threadMap = new ConcurrentHashMap<String, Generator>();
     muxQueue = new LinkedBlockingQueue<ServicePlatformMessage>(request.getInt("threads") + 1);
     this.myQueue = new LinkedBlockingQueue<ServicePlatformMessage>(request.getInt("threads") + 1);
-    this.producer = new RabbitMqProducer(muxQueue, request);
-    this.consumer = new RabbitMqConsumer(myQueue, request);
+    RabbitMqHelperSingleton.setRequestProp(request);
+    this.producer = new RabbitMqProducer(muxQueue);
+    this.consumer = new RabbitMqConsumer(myQueue);
   }
 
   public void start() {
     Logger.debug("Starting server with parameters:");
     Logger.debug(request.toString());
+    Random ran = new Random(System.currentTimeMillis());
     producer.connectToBus();
     consumer.connectToBus();
+
     producer.startProducing();
     consumer.startConsuming();
     new Thread(this).start();
 
+    try {
+      Thread.sleep(5000);
+    } catch (InterruptedException e1) {
+      // TODO Auto-generated catch block
+      e1.printStackTrace();
+    }
     for (int i = 0; i < request.getInt("threads"); i++) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
       Generator gen = new Generator(request.getInt("requests"), (File) request.get("folder"),
-          threadMap, muxQueue, i+1);
+          threadMap, muxQueue, i + 1, ran);
       myThreadPool.execute(gen);
     }
     myThreadPool.shutdown();
@@ -79,8 +96,8 @@ public class ProducerServer implements Runnable {
       try {
         message = myQueue.take();
         String sid = message.getSid();
-
         Generator th = threadMap.get(sid);
+        Logger.debug("Response received for Producer-" +th.getThreadIndex());
         th.update(null, message);
 
       } catch (InterruptedException e) {

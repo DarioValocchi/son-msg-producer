@@ -38,20 +38,18 @@ public class Generator implements Runnable, Observer {
   private int threadIndex;
 
   public Generator(int r, File f, ConcurrentHashMap<String, Generator> m,
-      BlockingQueue<ServicePlatformMessage> muxQueue, int index) {
+      BlockingQueue<ServicePlatformMessage> muxQueue, int index, Random rand) {
     this.requestsFolder = f;
     this.maxRequests = r;
     this.lockMap = m;
     this.muxQueue = muxQueue;
-    this.rand = new Random(System.currentTimeMillis());
     this.lock = new Object();
     this.threadIndex = index;
+    this.rand=rand;
   }
 
   @Override
   public void run() {
-
-    int numFile = requestsFolder.list().length;
     int requestDone = 0;
     while (requestDone < this.maxRequests) {
       currentUuid = UUID.randomUUID().toString();
@@ -126,8 +124,7 @@ public class Generator implements Runnable, Observer {
     File[] fileList = this.requestsFolder.listFiles();
     int requestNumber = rand.nextInt(fileList.length);
     currentRequestFile = fileList[requestNumber];
-    Logger.info("Thread-" + this.threadIndex + " - sending " + currentRequestFile.getName());
-
+    Logger.info("Producer-" + this.threadIndex + " - sending " + currentRequestFile.getName()+" - SID: "+uuid);
     JSONTokener tokener;
     try {
       tokener = new JSONTokener(new FileInputStream(currentRequestFile));
@@ -141,6 +138,7 @@ public class Generator implements Runnable, Observer {
     JSONObject object = (JSONObject) tokener.nextValue();
     JSONObject request = object.getJSONObject("request");
     String requestBody = request.getString("body");
+    requestBody = requestBody.replaceAll("@UUID", UUID.randomUUID().toString());
     String requestTopic = request.getString("topic");
     ServicePlatformMessage sp = new ServicePlatformMessage(requestBody, "application/xyaml",
         requestTopic, uuid, requestTopic);
@@ -151,6 +149,10 @@ public class Generator implements Runnable, Observer {
       return;
     }
     ProducerServer.incRequestsSent();
+  }
+
+  public int getThreadIndex() {
+    return threadIndex;
   }
 
 }

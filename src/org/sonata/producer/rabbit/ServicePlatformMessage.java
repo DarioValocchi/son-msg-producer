@@ -98,7 +98,7 @@ public class ServicePlatformMessage {
 
   @Override
   public String toString() {
-    return "sid: " + sid + " - message: " + body + " - topic: " + topic;
+    return "sid: " + sid  + " - topic: " + topic+ " - message: " + body;
   }
 
 }
