@@ -1,0 +1,12 @@
+{
+  "request":
+  {
+    "body":"\ninstance_id: @UUID\nvim_list:\n  - uuid: 30\n    vm_images:\n      - image_url: \"www.blabla.id/image1.qcow2\"\n        image_id: \"blabla.blabla.id.vnf1.01.vdu1\"\n      - image_url: \"www.blabla.id/image2.qcow2\"\n        image_id: \"blabla.blabla.id.vnf1.01.vdu2\"",
+    "topic":"infrastructure.service.prepare"  
+  },
+  "response":
+   {
+    "key_to_read":"request_status",
+    "expected_value":"COMPLETED"
+   }
+}

@@ -36,6 +36,7 @@ public class Generator implements Runnable, Observer {
   private String currentUuid = null;
   private File currentRequestFile = null;
   private int threadIndex;
+  private long start;
 
   public Generator(int r, File f, ConcurrentHashMap<String, Generator> m,
       BlockingQueue<ServicePlatformMessage> muxQueue, int index, Random rand) {
@@ -73,6 +74,9 @@ public class Generator implements Runnable, Observer {
   @Override
   public void update(Observable o, Object arg) {
     ServicePlatformMessage response = (ServicePlatformMessage) arg;
+    long stop = System.currentTimeMillis();
+    long delay = stop-this.start;
+    boolean success = true;
     // TODO log the response result;
     JSONTokener tokener;
     try {
@@ -90,13 +94,14 @@ public class Generator implements Runnable, Observer {
     String expValue = object.getString("expected_value");
     String responseBody= response.getBody().replace("\n", "");
     Logger.debug("received response:" + responseBody);
-
+    
     if (response.getContentType().equals("application/json")) {
       tokener = new JSONTokener(responseBody);
       object = (JSONObject) tokener.nextValue();
       String result = object.getString(expKey);
       if (!object.has(expKey) || !result.equals(expValue)) {
         ProducerServer.incRequestsFailed();
+        success=false;
       }else{
         Logger.info("Request successfully completed.");
       }
@@ -108,6 +113,7 @@ public class Generator implements Runnable, Observer {
         Map<String, Object> map = (Map<String, Object>) obj;
         if (!map.containsKey(expKey) || !map.get(expKey).equals(expValue)) {
           ProducerServer.incRequestsFailed();
+          success=false;
         } else{
           Logger.info("Request successfully completed.");
         }
@@ -115,12 +121,14 @@ public class Generator implements Runnable, Observer {
         e.printStackTrace();
       }
     }
+    StatLogger.getInstance().writeLine(delay, currentRequestFile.getName(), success);
     synchronized (lock) {
       lock.notify(); 
     }
   }
 
   private void sendRequest(String uuid) {
+    this.start = System.currentTimeMillis();
     File[] fileList = this.requestsFolder.listFiles();
     int requestNumber = rand.nextInt(fileList.length);
     currentRequestFile = fileList[requestNumber];

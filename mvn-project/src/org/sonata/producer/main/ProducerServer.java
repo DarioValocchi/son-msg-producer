@@ -62,19 +62,19 @@ public class ProducerServer implements Runnable {
       e1.printStackTrace();
     }
     for (int i = 0; i < request.getInt("threads"); i++) {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
       Generator gen = new Generator(request.getInt("requests"), (File) request.get("folder"),
           threadMap, muxQueue, i + 1, ran);
       myThreadPool.execute(gen);
+//      try {
+//        Thread.sleep(100);
+//      } catch (InterruptedException e) {
+//        // TODO Auto-generated catch block
+//        e.printStackTrace();
+//      }
     }
     myThreadPool.shutdown();
     try {
-      myThreadPool.awaitTermination(20, TimeUnit.MINUTES);
+      myThreadPool.awaitTermination(24, TimeUnit.HOURS);
     } catch (InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
