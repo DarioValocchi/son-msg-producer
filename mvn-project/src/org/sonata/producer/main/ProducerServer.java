@@ -44,7 +44,7 @@ public class ProducerServer implements Runnable {
     this.consumer = new RabbitMqConsumer(myQueue);
   }
 
-  public void start() {
+  public boolean start() {
     Logger.debug("Starting server with parameters:");
     Logger.debug(request.toString());
     Random ran = new Random(System.currentTimeMillis());
@@ -86,7 +86,7 @@ public class ProducerServer implements Runnable {
     stop();
     producer.stopProducing();
     consumer.stopConsuming();
-    return;
+    return ProducerServer.requestFailed==0;
   }
 
   @Override

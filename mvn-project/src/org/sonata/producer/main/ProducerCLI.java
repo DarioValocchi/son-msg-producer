@@ -38,16 +38,16 @@ public class ProducerCLI {
         .setDefault("son-kernel").help("Name of the exchange");
     parser.addArgument("--requests").type(Integer.class).metavar("-r").nargs("?")
           .setDefault(10).help("Number of random requests sent per thread");
+    boolean out=false;
     try {
       Namespace res = parser.parseArgs(args);
       ProducerServer server = new ProducerServer(res);
-      server.start();
+      out=server.start();
     } catch (ArgumentParserException e) {
       parser.printHelp();
       parser.handleError(e);
     }
-    
-    
+    System.exit(out?0:1);    
     
   }
 

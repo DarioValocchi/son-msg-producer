@@ -15,4 +15,4 @@ RUN mvn -e compile assembly:single;
 ENTRYPOINT ["java", "-jar", "target/RabbitMqProducer-0.0.1-SNAPSHOT-jar-with-dependencies.jar"]
 #ENTRYPOINT mvn exec:java -Dexec.mainClass="org.sonata.main.ProducerCLI"
 
-CMD ["--thread", "1", "--folder", "./messages", "--url", "amqp://guest:guest@son-broker:5672/%2F", "--threads", "5", "--requests", "5"]
+CMD ["--folder", "./messages", "--url", "amqp://guest:guest@son-broker:5672/%2F", "--threads", "5", "--requests", "5"]
