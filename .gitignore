@@ -27,3 +27,6 @@ hs_err_pid*
 .classpath
 
 .settings/
+
+# Post-processing of tests
+./results
